@@ -1,0 +1,29 @@
+[
+    {
+        "Name": "hiad-know-your-data-purview",
+        "Language": "English",
+        "BaseURL": "https://docs-api.cloudlabs.ai/repos/github.com/manojgowda-spektra/hiad-know-your-data-purview",
+        "Files": [
+            {
+                "RawFilePath": "https://docs-api.cloudlabs.ai/repos/raw.githubusercontent.com/manojgowda-spektra/hiad-know-your-data-purview/refs/heads/main/LabGuidePackage/Lab%20Guide/Lab%20Guide/GettingStarted-V2.md",
+                "Order": 1
+            },
+            {
+                "RawFilePath": "https://docs-api.cloudlabs.ai/repos/raw.githubusercontent.com/manojgowda-spektra/hiad-know-your-data-purview/refs/heads/main/LabGuidePackage/Lab%20Guide/Lab%20Guide/Exercise-01.md",
+                "Order": 2
+            },
+            {
+                "RawFilePath": "https://docs-api.cloudlabs.ai/repos/raw.githubusercontent.com/manojgowda-spektra/hiad-know-your-data-purview/refs/heads/main/LabGuidePackage/Lab%20Guide/Lab%20Guide/Exercise-02.md",
+                "Order": 3
+            },
+            {
+                "RawFilePath": "https://docs-api.cloudlabs.ai/repos/raw.githubusercontent.com/manojgowda-spektra/hiad-know-your-data-purview/refs/heads/main/LabGuidePackage/Lab%20Guide/Lab%20Guide/Exercise-03.md",
+                "Order": 4
+            },
+            {
+                "RawFilePath": "https://docs-api.cloudlabs.ai/repos/raw.githubusercontent.com/manojgowda-spektra/hiad-know-your-data-purview/refs/heads/main/LabGuidePackage/Lab%20Guide/Lab%20Guide/Exercise-04.md",
+                "Order": 5
+            }
+        ]
+    }
+]

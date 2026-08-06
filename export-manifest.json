@@ -1,0 +1,104 @@
+{
+  "packageId": "15f911a6-59ca-4f17-b152-7a646e8956b3",
+  "slug": "know-your-data-discover-classify-and-protect-sensitive-information-with-microsoft-purview-mPe9D",
+  "title": "Know Your Data - Discover, Classify and Protect Sensitive Information with Microsoft Purview",
+  "version": 1,
+  "exportedAt": "2026-08-06T13:00:48.081Z",
+  "force": false,
+  "deliverableConfig": {
+    "arm": {
+      "stages": 0,
+      "enabled": false
+    },
+    "cse": {
+      "enabled": false
+    },
+    "rbac": {
+      "enabled": false
+    },
+    "policy": {
+      "enabled": false
+    },
+    "readme": {
+      "enabled": true
+    },
+    "labGuide": {
+      "enabled": true,
+      "exercises": 4
+    },
+    "solution": {
+      "enabled": false
+    },
+    "questions": {
+      "count": 0,
+      "enabled": false
+    },
+    "specSheet": {
+      "enabled": true
+    },
+    "validations": {
+      "count": 4,
+      "enabled": true
+    }
+  },
+  "artifacts": [
+    {
+      "path": "LabGuidePackage/Lab Guide/Lab Guide/Exercise-01.md",
+      "kind": "exercise_md",
+      "lintStatus": "passed"
+    },
+    {
+      "path": "LabGuidePackage/Lab Guide/Lab Guide/Exercise-02.md",
+      "kind": "exercise_md",
+      "lintStatus": "passed"
+    },
+    {
+      "path": "LabGuidePackage/Lab Guide/Lab Guide/Exercise-03.md",
+      "kind": "exercise_md",
+      "lintStatus": "passed"
+    },
+    {
+      "path": "LabGuidePackage/Lab Guide/Lab Guide/Exercise-04.md",
+      "kind": "exercise_md",
+      "lintStatus": "passed"
+    },
+    {
+      "path": "LabGuidePackage/Lab Guide/Lab Guide/GettingStarted-V2.md",
+      "kind": "getting_started",
+      "lintStatus": "passed"
+    },
+    {
+      "path": "Spec.md",
+      "kind": "spec_md",
+      "lintStatus": "passed"
+    },
+    {
+      "path": "Validations/AutoSensitivityLabelPolicy.ps1",
+      "kind": "validation_ps1",
+      "lintStatus": "warn"
+    },
+    {
+      "path": "Validations/DLP Policies.ps1",
+      "kind": "validation_ps1",
+      "lintStatus": "passed"
+    },
+    {
+      "path": "Validations/Sensitivity Labels.ps1",
+      "kind": "validation_ps1",
+      "lintStatus": "passed"
+    },
+    {
+      "path": "Validations/Zava Global Label Policy.ps1",
+      "kind": "validation_ps1",
+      "lintStatus": "passed"
+    }
+  ],
+  "errors": [],
+  "coherence": [],
+  "runnability": {
+    "issues": [],
+    "blocking": 0,
+    "warning": 0,
+    "info": 0
+  }
+}
