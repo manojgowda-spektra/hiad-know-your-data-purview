@@ -51,10 +51,41 @@ function Get-MinCountForSensitiveType {
     return $null
 }
 
+function Connect-PurviewCompliance {
+    # ExchangeOnlineManagement is not offered in the CloudLabs template module catalogue,
+    # so the validator installs it on first run.
+    if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
+        Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
+    }
+    Import-Module ExchangeOnlineManagement -ErrorAction Stop
+
+    try {
+        $existingConnection = Get-ConnectionInformation -ErrorAction SilentlyContinue | Where-Object {
+            $_.ConnectionUri -like '*compliance.protection.outlook.com*' -or $_.Name -like '*IPPSSession*'
+        }
+        if ($null -ne $existingConnection) { return }
+    }
+    catch {}
+
+    $userName = if ($env:AzureAdUserEmail) { $env:AzureAdUserEmail } elseif ($env:AZUREADUSEREMAIL) { $env:AZUREADUSEREMAIL } else { $null }
+    $userPassword = if ($env:AzureAdUserPassword) { $env:AzureAdUserPassword } elseif ($env:AZUREADUSERPASSWORD) { $env:AZUREADUSERPASSWORD } else { $null }
+
+    if ([string]::IsNullOrWhiteSpace($userName) -or [string]::IsNullOrWhiteSpace($userPassword)) {
+        throw "Validator could not obtain AzureAdUserEmail and AzureAdUserPassword for Compliance PowerShell sign-in."
+    }
+
+    # Non-interactive sign-in: -UserPrincipalName would prompt and hang the validator runtime.
+    $securePassword = ConvertTo-SecureString $userPassword -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential ($userName, $securePassword)
+    Connect-IPPSSession -Credential $credential -ErrorAction Stop | Out-Null
+}
+
 do {
     $count = $count + 1
     try {
         Set-AzContext -Subscription $sub -ErrorAction Stop | Out-Null
+
+        Connect-PurviewCompliance
 
         $policyName = 'Zava Auto-Label Policy'
         $policy = Get-AutoSensitivityLabelPolicy -Identity $policyName -ErrorAction Stop
@@ -133,12 +164,16 @@ do {
             } | ConvertTo-Json
         }
 
+        Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue
+
         Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::OK
             Body       = $message
         })
     }
     catch {
+        try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+
         $message = @{
             Status  = 'Failed'
             Message = "Error during check. Attempt $count of 3. Error: $($_.Exception.Message)"

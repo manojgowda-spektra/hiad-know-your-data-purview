@@ -122,9 +122,11 @@ do {
     try {
         Set-AzContext -Subscription $sub -ErrorAction Stop
 
+        # ExchangeOnlineManagement is not offered in the CloudLabs template module catalogue,
+        # so the validator installs it on first run.
         $module = Get-Module -ListAvailable ExchangeOnlineManagement | Sort-Object Version -Descending | Select-Object -First 1
         if (-not $module) {
-            throw "ExchangeOnlineManagement module is not available for Security & Compliance PowerShell connectivity."
+            Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
         }
 
         Import-Module ExchangeOnlineManagement -ErrorAction Stop | Out-Null
