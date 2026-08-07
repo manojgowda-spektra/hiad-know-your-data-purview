@@ -261,7 +261,7 @@ do {
                 Message = $message
             } | ConvertTo-Json
         }
-        Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::OK
             Body       = $message
         })
@@ -276,7 +276,7 @@ do {
             Status  = "Failed"
             Message = "Error during check. Attempt $count of 3. Error: $($_.Exception.Message)"
         } | ConvertTo-Json
-        Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::OK
             Body       = $message
         })
@@ -291,7 +291,7 @@ if (-not $found) {
         Status  = "Failed"
         Message = "Sensitivity labels not validated in RG '$rg' after 3 attempts."
     } | ConvertTo-Json
-    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::OK
         Body       = $message
     })

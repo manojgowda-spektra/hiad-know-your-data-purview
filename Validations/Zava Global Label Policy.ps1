@@ -113,7 +113,7 @@ do {
 
         Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue
 
-        Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::OK
             Body       = $message
         })
@@ -125,7 +125,7 @@ do {
             Status  = "Failed"
             Message = "Error during check. Attempt $count of 3. Error: $($_.Exception.Message)"
         } | ConvertTo-Json
-        Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::OK
             Body       = $message
         })
@@ -140,7 +140,7 @@ if (-not $found) {
         Status  = "Failed"
         Message = "Label policy '$policyName' not found or incomplete after 3 attempts. Required labels: $($requiredLabels -join ', ')."
     } | ConvertTo-Json
-    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::OK
         Body       = $message
     })

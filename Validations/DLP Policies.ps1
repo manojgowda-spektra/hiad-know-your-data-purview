@@ -232,7 +232,7 @@ do {
         }
         Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue
 
-        Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::OK
             Body       = $message
         })
@@ -244,7 +244,7 @@ do {
             Status  = 'Failed'
             Message = "Error during check. Attempt $count of 3. Error: $($_.Exception.Message)"
         } | ConvertTo-Json
-        Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::OK
             Body       = $message
         })
@@ -259,7 +259,7 @@ if (-not $found) {
         Status  = 'Failed'
         Message = "DLP Policies validation did not succeed after 3 attempts. Required policies 'Block External Sharing of Highly Confidential' and/or 'Protect Data from AI Apps' were not found or did not match the expected simulation, scope, and activity configuration checks."
     } | ConvertTo-Json
-    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::OK
         Body       = $message
     })
