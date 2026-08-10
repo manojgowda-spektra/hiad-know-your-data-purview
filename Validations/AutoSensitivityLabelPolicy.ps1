@@ -92,22 +92,27 @@ do {
         $rule = Get-AutoSensitivityLabelRule -Policy $policyName -ErrorAction Stop | Select-Object -First 1
 
         $allLabels = Get-Label -ErrorAction Stop
-        $referenceLabel = $allLabels | Where-Object {
-            $_.Name -match 'Highly Confidential' -and $_.Name -notlike 'Zava*'
+        $targetLabelName = 'Zava Highly Confidential'
+        $targetLabel = $allLabels | Where-Object {
+            $_.DisplayName -eq $targetLabelName -or $_.Name -eq $targetLabelName
         } | Select-Object -First 1
 
-        if ($null -eq $referenceLabel) {
-            throw "Could not locate the pre-published reference Highly Confidential label in the tenant."
-        }
+        # A missing label is reported as a structured Failed result below rather than
+        # thrown, so the attendee is told which task to complete instead of seeing a
+        # generic 'Error during check' after three retries.
 
         $sharePointEnabled = Test-LocationEnabled -Value $policy.SharePointLocation
         $oneDriveEnabled = Test-LocationEnabled -Value $policy.OneDriveLocation
         $exchangeEnabled = Test-LocationEnabled -Value $policy.ExchangeLocation
         $simulationMode = $policy.Mode -eq 'TestWithoutNotifications'
 
-        $labelMatches = ($policy.ApplySensitivityLabel -eq $referenceLabel.ImmutableId) -or
-                        ($policy.ApplySensitivityLabel -eq $referenceLabel.Guid) -or
-                        ($policy.ApplySensitivityLabel -eq $referenceLabel.Name)
+        $labelMatches = $false
+        if ($null -ne $targetLabel) {
+            $labelMatches = ($policy.ApplySensitivityLabel -eq $targetLabel.ImmutableId) -or
+                            ($policy.ApplySensitivityLabel -eq $targetLabel.Guid) -or
+                            ($policy.ApplySensitivityLabel -eq $targetLabel.Name) -or
+                            ($policy.ApplySensitivityLabel -eq $targetLabel.DisplayName)
+        }
 
         $sensitiveInfoConfig = $rule.ContentContainsSensitiveInformation
         $creditCardMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'Credit Card Number'
@@ -124,7 +129,7 @@ do {
             $found = $true
             $message = @{
                 Status  = 'Succeeded'
-                Message = "Auto-labeling policy '$policyName' is configured in simulation mode, applies reference label '$($referenceLabel.Name)', targets SharePoint, OneDrive, and Exchange, and includes Credit Card Number and U.S. Social Security Number with minimum count 5."
+                Message = "Auto-labeling policy '$policyName' is configured in simulation mode, applies the '$targetLabelName' label, targets SharePoint, OneDrive, and Exchange, and includes Credit Card Number and U.S. Social Security Number with minimum count 5."
             } | ConvertTo-Json
         }
         else {
@@ -134,7 +139,12 @@ do {
                 $failureReasons += "Mode is '$($policy.Mode)' instead of 'TestWithoutNotifications' (simulation mode)."
             }
             if (-not $labelMatches) {
-                $failureReasons += "Applied label '$($policy.ApplySensitivityLabel)' does not match the reference Highly Confidential label '$($referenceLabel.Name)'."
+                if ($null -eq $targetLabel) {
+                    $failureReasons += "The '$targetLabelName' label does not exist in this tenant. Complete Challenge 2 Task 1 and Task 2 before validating this step."
+                }
+                else {
+                    $failureReasons += "Applied label '$($policy.ApplySensitivityLabel)' does not match the '$targetLabelName' label."
+                }
             }
             if (-not $sharePointEnabled) {
                 $failureReasons += 'SharePoint is not included in policy locations.'
@@ -187,10 +197,14 @@ do {
 } while ($count -lt 3 -and -not $found)
 
 if (-not $found) {
-    $message = @{
-        Status  = 'Failed'
-        Message = "Auto-labeling policy 'Zava Auto-Label Policy' was not validated successfully after 3 attempts."
-    } | ConvertTo-Json
+    # Keep the last detailed result. Overwriting it here with a generic message is what
+    # currently hides every specific failure reason from the attendee.
+    if ([string]::IsNullOrWhiteSpace($message)) {
+        $message = @{
+            Status  = 'Failed'
+            Message = "Auto-labeling policy 'Zava Auto-Label Policy' was not validated successfully after 3 attempts."
+        } | ConvertTo-Json
+    }
     Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::OK
         Body       = $message

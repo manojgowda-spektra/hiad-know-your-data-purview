@@ -136,10 +136,14 @@ do {
 # Post-loop: if every attempt failed, emit a final failure JSON so CloudLabs
 # always sees a structured result.
 if (-not $found) {
-    $message = @{
-        Status  = "Failed"
-        Message = "Label policy '$policyName' not found or incomplete after 3 attempts. Required labels: $($requiredLabels -join ', ')."
-    } | ConvertTo-Json
+    # Keep the last detailed result. Overwriting it here with a generic message is what
+    # currently hides which labels were actually missing from the policy.
+    if ([string]::IsNullOrWhiteSpace($message)) {
+        $message = @{
+            Status  = "Failed"
+            Message = "Label policy '$policyName' not found or incomplete after 3 attempts. Required labels: $($requiredLabels -join ', ')."
+        } | ConvertTo-Json
+    }
     Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::OK
         Body       = $message

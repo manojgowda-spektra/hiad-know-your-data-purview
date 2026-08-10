@@ -162,9 +162,15 @@ do {
             'Zava Highly Confidential'
         )
 
+        $allLabels = Get-Label -ErrorAction Stop
+
         $labels = @{}
         foreach ($labelName in $requiredLabels) {
-            $label = Get-Label -Identity $labelName -ErrorAction SilentlyContinue
+            # Match DisplayName as well as Name: Get-Label -Identity accepts only Name, DN
+            # or GUID, and a label's Name is not guaranteed to equal its display name.
+            $label = $allLabels | Where-Object {
+                $_.DisplayName -eq $labelName -or $_.Name -eq $labelName
+            } | Select-Object -First 1
             if ($null -ne $label) {
                 $labels[$labelName] = $label
             }
@@ -212,17 +218,61 @@ do {
             if (-not (Test-ValueEquals (Get-SettingValue -Label $confidential -Name 'ApplyWaterMarkingText') 'Confidential')) {
                 $failures.Add("Zava Confidential watermark text must equal 'Confidential'.")
             }
+            # Structural check. The previous keyword match could never pass: granting rights
+            # to everyone in the organization stores the tenant's own domain, and 'any
+            # authenticated users' stores AuthenticatedUsers - neither contains 'all',
+            # 'organization', 'tenant' or 'internal'.
             $confidentialRights = Get-SettingValue -Label $confidential -Name 'EncryptionRightsDefinitions'
-            if (-not (Test-ContainsText $confidentialRights 'all') -and -not (Test-ContainsText $confidentialRights 'organization') -and -not (Test-ContainsText $confidentialRights 'tenant') -and -not (Test-ContainsText $confidentialRights 'internal')) {
-                $failures.Add("Zava Confidential must assign encryption permissions for internal users only.")
+            $rightsIdentities = @()
+            foreach ($entry in @($confidentialRights)) {
+                if ($null -eq $entry) { continue }
+                if ($entry.PSObject.Properties['Identity'] -and -not [string]::IsNullOrWhiteSpace([string]$entry.Identity)) {
+                    $rightsIdentities += ([string]$entry.Identity).Trim().ToLowerInvariant()
+                    continue
+                }
+                # Documented Identity:Rights string form, one or more pairs per entry.
+                foreach ($pair in (([string]$entry) -split ';')) {
+                    if ([string]::IsNullOrWhiteSpace($pair)) { continue }
+                    $rightsIdentities += ((($pair -split ':')[0]).Trim()).ToLowerInvariant()
+                }
+            }
+
+            $tenantDomain = if ($userName -like '*@*') { (($userName -split '@')[-1]).Trim().ToLowerInvariant() } else { '' }
+            $externalIdentities = @()
+            foreach ($identity in $rightsIdentities) {
+                if ([string]::IsNullOrWhiteSpace($identity)) { continue }
+                if ($identity -in @('authenticatedusers', 'allauthenticatedusers', 'allstaff', 'myorganization')) { continue }
+                $domain = if ($identity -like '*@*') { ($identity -split '@')[-1] } elseif ($identity -like '*.*') { $identity } else { '' }
+                if ([string]::IsNullOrWhiteSpace($domain)) { continue }
+                if ($domain -like '*.onmicrosoft.com') { continue }
+                if ($tenantDomain -and $domain -eq $tenantDomain) { continue }
+                $externalIdentities += $identity
+            }
+
+            if ($rightsIdentities.Count -eq 0) {
+                $failures.Add("Zava Confidential must use encryption with permissions assigned to users in your organization.")
+            }
+            elseif ($externalIdentities.Count -gt 0) {
+                $failures.Add("Zava Confidential must assign encryption permissions for internal users only. Rights are granted to: $($externalIdentities -join ', ').")
             }
 
             $highly = $labels['Zava Highly Confidential']
             if (-not (Test-ValueTrueLike (Get-SettingValue -Label $highly -Name 'EncryptionEnabled'))) {
                 $failures.Add("Zava Highly Confidential must use encryption.")
             }
-            if (-not (Test-ValueTrueLike (Get-SettingValue -Label $highly -Name 'EncryptionDoNotForward'))) {
-                $failures.Add("Zava Highly Confidential must use Do Not Forward encryption.")
+            # Auto-labeling cannot write a user-defined-permissions label to SharePoint or
+            # OneDrive, and Challenge 2 Task 3 targets both. Assign permissions now with
+            # non-expiring access is the configuration that policy requires.
+            if (Test-ValueTrueLike (Get-SettingValue -Label $highly -Name 'EncryptionDoNotForward')) {
+                $failures.Add("Zava Highly Confidential must use 'Assign permissions now' rather than Do Not Forward, because an auto-labeling policy cannot apply a user-defined-permissions label to SharePoint or OneDrive content.")
+            }
+            $highlyProtectionType = [string](Get-SettingValue -Label $highly -Name 'EncryptionProtectionType')
+            if ($highlyProtectionType -match 'UserDefined') {
+                $failures.Add("Zava Highly Confidential must use 'Assign permissions now' rather than letting users assign permissions.")
+            }
+            $highlyExpiry = [string](Get-SettingValue -Label $highly -Name 'EncryptionContentExpiredOnDateInDaysOrNever')
+            if (-not [string]::IsNullOrWhiteSpace($highlyExpiry) -and $highlyExpiry -notmatch 'Never') {
+                $failures.Add("Zava Highly Confidential must set user access to content to never expire, which auto-labeling requires for SharePoint and OneDrive locations.")
             }
             if (-not (Test-ValueTrueLike (Get-SettingValue -Label $highly -Name 'ApplyWaterMarkingEnabled'))) {
                 $failures.Add("Zava Highly Confidential must have a watermark enabled.")
@@ -241,7 +291,7 @@ do {
 
             if ($failures.Count -eq 0) {
                 $found = $true
-                $message = "Validated sensitivity labels Zava Public, Zava Internal, Zava Confidential, and Zava Highly Confidential with the required no-encryption, header, watermark, encryption, Do Not Forward, and Groups & sites settings."
+                $message = "Validated sensitivity labels Zava Public, Zava Internal, Zava Confidential, and Zava Highly Confidential with the required no-encryption, header, watermark, encryption, assign-permissions-now, and Groups & sites settings."
             }
             else {
                 $message = $failures -join ' '
@@ -287,10 +337,14 @@ do {
 # Post-loop: if every attempt failed, emit a final failure JSON so CloudLabs
 # always sees a structured result.
 if (-not $found) {
-    $message = @{
-        Status  = "Failed"
-        Message = "Sensitivity labels not validated in RG '$rg' after 3 attempts."
-    } | ConvertTo-Json
+    # Keep the last detailed result. Overwriting it here with a generic message is what
+    # currently hides every specific failure reason from the attendee.
+    if ([string]::IsNullOrWhiteSpace($message)) {
+        $message = @{
+            Status  = "Failed"
+            Message = "Sensitivity labels not validated after 3 attempts."
+        } | ConvertTo-Json
+    }
     Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::OK
         Body       = $message

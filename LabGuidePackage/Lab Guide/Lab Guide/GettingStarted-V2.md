@@ -66,5 +66,5 @@ This lab uses a browser-based Microsoft 365 tenant with Microsoft Purview availa
 
 1. Some Microsoft Purview results take up to an hour to appear. Challenge 1 starts a simulation early and asks you to return to it, so background processing runs while you work on Challenge 2.
 2. You will build the Zava configuration yourself, and use reserved test values so no real sensitive data enters the tenant.
-3. Challenge 2 and Challenge 3 are validated through automated configuration checks. Challenge 1 and Challenge 4 are assessed through the evidence and reasoning you record.
+3. Where a challenge shows a Validate button, use it to check your configuration against the required names and settings. Every challenge is also assessed through the evidence and reasoning you record, and a challenge with no Validate button is graded on that alone.
 4. You should keep notes as you progress because several challenges require you to capture summary findings and compare observed risk signals.

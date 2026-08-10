@@ -52,7 +52,7 @@ In this task, you will create the content that Zava's discovery controls will ac
 
 In this task, you will configure the control that reports on sensitive content, then reason about what it tells you.
 
-1. Create a Data Loss Prevention policy in **simulation mode** scoped to SharePoint and OneDrive, matching the sensitive information types you validated in Task 1. Simulation mode reports matches without enforcing anything.
+1. Create a Data Loss Prevention policy named Zava Discovery Baseline in **simulation mode**, scoped to SharePoint and OneDrive, matching the sensitive information types you validated in Task 1. Simulation mode reports matches without enforcing anything. Use this name so the policy is easy to tell apart from the two DLP policies you create and review by name in Challenge 3.
 2. Confirm the policy is running in simulation and not turned on. In SharePoint and OneDrive, simulation evaluates existing items as well as new ones, which is why it can report on the content you placed in Task 2.
 3. Record the time you started the simulation. Results typically appear within about an hour, so continue to Challenge 2 and return to this task once the simulation has reported.
 4. Review the simulation results and compare the locations you used. Determine which location holds the highest concentration of unprotected sensitive content.
