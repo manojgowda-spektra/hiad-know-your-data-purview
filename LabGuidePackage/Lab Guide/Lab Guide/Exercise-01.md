@@ -32,7 +32,15 @@ In this task, you will prove that the classification engine recognises the data 
 
 In this task, you will create the content that Zava's discovery controls will act on.
 
-1. Create three documents containing the sensitive information types you validated in Task 1, using reserved test values rather than real data. Give each a name that reflects a plausible business purpose, such as a customer payment record, a payroll extract, and a patient contact list.
+1. Create three documents containing the sensitive information types you validated in Task 1, using the reserved test values below rather than real data. Give each a name that reflects a plausible business purpose, such as a customer payment record, a payroll extract, and a patient contact list.
+
+   | Document | Include these reserved test values |
+   |---|---|
+   | Customer payment record | Credit card `4111 1111 1111 1111` and `5500 0000 0000 0004`, each with a cardholder name and an expiry date so the type has its supporting evidence |
+   | Payroll extract | U.S. Social Security Numbers `123-45-6789` and `987-65-4321`, each next to an employee name |
+   | Patient contact list | IBAN `GB82 WEST 1234 5698 7654 32`, plus patient names alongside a health condition such as diabetes or asthma |
+
+   Include at least five records in each document. A single match can fall below the confidence threshold, whereas a realistic volume detects reliably and gives you something meaningful to compare in Task 3.
 2. Place one document in a SharePoint site that represents a broadly shared team location.
 3. Place a second document in the same SharePoint site inside a separate library, so you have two locations in one site to compare.
 4. Place the third document in your OneDrive.
