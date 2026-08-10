@@ -7,6 +7,48 @@ $rg = "purview-$DID"
 $count = 0
 $found = $false
 
+function Get-LabelActionSetting {
+    # Purview stores label configuration in LabelActions, not as flat properties and
+    # not in the Settings collection. Each entry is JSON of the form
+    #   {"Type":"encrypt","SubType":null,"Settings":[{"Key":"disabled","Value":"false"},...]}
+    param(
+        [object]$Label,
+        [string]$Type,
+        [string]$Key,
+        [string]$SubType
+    )
+
+    foreach ($action in @($Label.LabelActions)) {
+        if ($null -eq $action) { continue }
+        try { $parsed = $action | ConvertFrom-Json -ErrorAction Stop } catch { continue }
+        if ($parsed.Type -ne $Type) { continue }
+        if ($SubType -and $parsed.SubType -ne $SubType) { continue }
+        foreach ($setting in @($parsed.Settings)) {
+            if ($setting.Key -eq $Key) { return $setting.Value }
+        }
+    }
+    return $null
+}
+
+function Test-LabelActionPresent {
+    param([object]$Label, [string]$Type, [string]$SubType)
+
+    foreach ($action in @($Label.LabelActions)) {
+        if ($null -eq $action) { continue }
+        try { $parsed = $action | ConvertFrom-Json -ErrorAction Stop } catch { continue }
+        if ($parsed.Type -ne $Type) { continue }
+        if ($SubType -and $parsed.SubType -ne $SubType) { continue }
+        # an action whose 'disabled' setting is true is configured but switched off
+        $disabled = $null
+        foreach ($setting in @($parsed.Settings)) {
+            if ($setting.Key -eq 'disabled') { $disabled = "$($setting.Value)" }
+        }
+        if ($disabled -and $disabled.Trim().ToLowerInvariant() -eq 'true') { return $false }
+        return $true
+    }
+    return $false
+}
+
 function Get-SettingValue {
     param(
         [object]$Label,
@@ -184,45 +226,45 @@ do {
             $failures = New-Object System.Collections.Generic.List[string]
 
             $public = $labels['Zava Public']
-            if (-not (Test-ValueFalseLike (Get-SettingValue -Label $public -Name 'EncryptionEnabled'))) {
+            if (Test-LabelActionPresent -Label $public -Type 'encrypt') {
                 $failures.Add("Zava Public must not use encryption.")
             }
-            if (-not (Test-ValueFalseLike (Get-SettingValue -Label $public -Name 'ApplyContentMarkingHeaderEnabled'))) {
+            if (Test-LabelActionPresent -Label $public -Type 'applycontentmarking' -SubType 'header') {
                 $failures.Add("Zava Public must not have a header.")
             }
-            if (-not (Test-ValueFalseLike (Get-SettingValue -Label $public -Name 'ApplyContentMarkingFooterEnabled'))) {
+            if (Test-LabelActionPresent -Label $public -Type 'applycontentmarking' -SubType 'footer') {
                 $failures.Add("Zava Public must not have a footer.")
             }
-            if (-not (Test-ValueFalseLike (Get-SettingValue -Label $public -Name 'ApplyWaterMarkingEnabled'))) {
+            if (Test-LabelActionPresent -Label $public -Type 'applywatermarking') {
                 $failures.Add("Zava Public must not have a watermark.")
             }
 
             $internal = $labels['Zava Internal']
-            if (-not (Test-ValueFalseLike (Get-SettingValue -Label $internal -Name 'EncryptionEnabled'))) {
+            if (Test-LabelActionPresent -Label $internal -Type 'encrypt') {
                 $failures.Add("Zava Internal must not use encryption.")
             }
-            if (-not (Test-ValueTrueLike (Get-SettingValue -Label $internal -Name 'ApplyContentMarkingHeaderEnabled'))) {
+            if (-not (Test-LabelActionPresent -Label $internal -Type 'applycontentmarking' -SubType 'header')) {
                 $failures.Add("Zava Internal must have the header enabled.")
             }
-            if (-not (Test-ValueEquals (Get-SettingValue -Label $internal -Name 'ApplyContentMarkingHeaderText') 'Zava Internal')) {
+            if (-not (Test-ValueEquals (Get-LabelActionSetting -Label $internal -Type 'applycontentmarking' -SubType 'header' -Key 'text') 'Zava Internal')) {
                 $failures.Add("Zava Internal header text must equal 'Zava Internal'.")
             }
 
             $confidential = $labels['Zava Confidential']
-            if (-not (Test-ValueTrueLike (Get-SettingValue -Label $confidential -Name 'EncryptionEnabled'))) {
+            if (-not (Test-LabelActionPresent -Label $confidential -Type 'encrypt')) {
                 $failures.Add("Zava Confidential must use encryption.")
             }
-            if (-not (Test-ValueTrueLike (Get-SettingValue -Label $confidential -Name 'ApplyWaterMarkingEnabled'))) {
+            if (-not (Test-LabelActionPresent -Label $confidential -Type 'applywatermarking')) {
                 $failures.Add("Zava Confidential must have a watermark enabled.")
             }
-            if (-not (Test-ValueEquals (Get-SettingValue -Label $confidential -Name 'ApplyWaterMarkingText') 'Confidential')) {
+            if (-not (Test-ValueEquals (Get-LabelActionSetting -Label $confidential -Type 'applywatermarking' -Key 'text') 'Confidential')) {
                 $failures.Add("Zava Confidential watermark text must equal 'Confidential'.")
             }
             # Structural check. The previous keyword match could never pass: granting rights
             # to everyone in the organization stores the tenant's own domain, and 'any
             # authenticated users' stores AuthenticatedUsers - neither contains 'all',
             # 'organization', 'tenant' or 'internal'.
-            $confidentialRights = Get-SettingValue -Label $confidential -Name 'EncryptionRightsDefinitions'
+            $confidentialRights = Get-LabelActionSetting -Label $confidential -Type 'encrypt' -Key 'rightsdefinitions'
             $rightsIdentities = @()
             foreach ($entry in @($confidentialRights)) {
                 if ($null -eq $entry) { continue }
@@ -257,34 +299,34 @@ do {
             }
 
             $highly = $labels['Zava Highly Confidential']
-            if (-not (Test-ValueTrueLike (Get-SettingValue -Label $highly -Name 'EncryptionEnabled'))) {
+            if (-not (Test-LabelActionPresent -Label $highly -Type 'encrypt')) {
                 $failures.Add("Zava Highly Confidential must use encryption.")
             }
             # Auto-labeling cannot write a user-defined-permissions label to SharePoint or
             # OneDrive, and Challenge 2 Task 3 targets both. Assign permissions now with
             # non-expiring access is the configuration that policy requires.
-            if (Test-ValueTrueLike (Get-SettingValue -Label $highly -Name 'EncryptionDoNotForward')) {
+            if (Test-ValueTrueLike (Get-LabelActionSetting -Label $highly -Type 'encrypt' -Key 'donotforward')) {
                 $failures.Add("Zava Highly Confidential must use 'Assign permissions now' rather than Do Not Forward, because an auto-labeling policy cannot apply a user-defined-permissions label to SharePoint or OneDrive content.")
             }
-            $highlyProtectionType = [string](Get-SettingValue -Label $highly -Name 'EncryptionProtectionType')
+            $highlyProtectionType = [string](Get-LabelActionSetting -Label $highly -Type 'encrypt' -Key 'protectiontype')
             if ($highlyProtectionType -match 'UserDefined') {
                 $failures.Add("Zava Highly Confidential must use 'Assign permissions now' rather than letting users assign permissions.")
             }
-            $highlyExpiry = [string](Get-SettingValue -Label $highly -Name 'EncryptionContentExpiredOnDateInDaysOrNever')
+            $highlyExpiry = [string](Get-LabelActionSetting -Label $highly -Type 'encrypt' -Key 'contentexpiredondateindaysorever')
             if (-not [string]::IsNullOrWhiteSpace($highlyExpiry) -and $highlyExpiry -notmatch 'Never') {
                 $failures.Add("Zava Highly Confidential must set user access to content to never expire, which auto-labeling requires for SharePoint and OneDrive locations.")
             }
-            if (-not (Test-ValueTrueLike (Get-SettingValue -Label $highly -Name 'ApplyWaterMarkingEnabled'))) {
+            if (-not (Test-LabelActionPresent -Label $highly -Type 'applywatermarking')) {
                 $failures.Add("Zava Highly Confidential must have a watermark enabled.")
             }
-            if (-not (Test-ValueEquals (Get-SettingValue -Label $highly -Name 'ApplyWaterMarkingText') 'Highly Confidential')) {
+            if (-not (Test-ValueEquals (Get-LabelActionSetting -Label $highly -Type 'applywatermarking' -Key 'text') 'Highly Confidential')) {
                 $failures.Add("Zava Highly Confidential watermark text must equal 'Highly Confidential'.")
             }
             $contentType = [string](Get-SettingValue -Label $highly -Name 'ContentType')
             if (-not ($contentType -match 'Site|UnifiedGroup')) {
                 $failures.Add("Zava Highly Confidential must include Groups & sites in scope.")
             }
-            $sharingControl = [string](Get-SettingValue -Label $highly -Name 'SiteExternalSharingControlType')
+            $sharingControl = [string](Get-LabelActionSetting -Label $highly -Type 'protectsiteandgroup' -Key 'sharingcapability')
             if (-not ($sharingControl -match 'OnlyPeopleInYourOrganization|Disabled')) {
                 $failures.Add("Zava Highly Confidential must restrict external sharing to Only people in your organization.")
             }
