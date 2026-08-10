@@ -21,10 +21,10 @@ In this challenge, you create one DLP policy for external sharing scenarios and 
 In this task, you will define a DLP policy that reduces the risk of highly confidential data leaving the organization.
 
 1. Create a DLP policy named Block External Sharing of Highly Confidential.
-2. Configure the policy to detect content protected with the Highly Confidential label or equivalent sensitive data conditions aligned to the reference design.
-3. Configure the policy to prevent sharing outside the organization.
+2. Configure the policy to detect content that carries the Highly Confidential sensitivity label. Use the label itself as the condition rather than an equivalent sensitive information type, so the control matches the reference design.
+3. Apply the policy to the Microsoft 365 collaboration locations - Exchange, SharePoint, OneDrive and Teams - and configure it to prevent sharing outside the organization.
 4. Ensure the policy also surfaces a policy tip and alerts the compliance team.
-5. Keep the policy aligned to simulation-first review so the configuration can be assessed without waiting for new enforcement behavior.
+5. Leave the policy in simulation mode rather than turning it on, so the configuration can be assessed without waiting for new enforcement behavior.
 6. Review the completed policy definition and confirm the name, purpose, and response actions are all correct.
 
 ## Task 2: Create the AI app Endpoint DLP policy
@@ -36,7 +36,7 @@ In this task, you will define a device-scoped DLP policy for generative AI websi
 3. Use the built-in Generative AI Websites sensitive service domain group in the device-scoped policy logic.
 4. Include the activities Upload to a restricted cloud service domain and Paste to supported browsers.
 5. Configure the policy so it reflects the intended protection outcome for sensitive data shared to third-party generative AI websites.
-6. Keep the configuration aligned to reviewable policy settings and existing endpoint evidence rather than waiting for new blocked actions to occur.
+6. Leave the policy in simulation mode rather than turning it on, so the configuration can be reviewed against existing endpoint evidence instead of waiting for new blocked actions.
 
 ## Task 3: Review the expected control outcomes
 

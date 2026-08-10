@@ -36,8 +36,6 @@ In this task, you will examine the available insider risk evidence for two depar
 4. Determine which behaviors are more consistent with suspicious data theft and which may reflect lower-risk activity in context.
 5. Answer the inline knowledge check when prompted.
 
-<question>
-
 ## Task 3: Use Security Copilot in Purview to complete the investigation
 
 In this task, you will use Security Copilot in Purview to summarize and defend your investigation outcome.
@@ -47,10 +45,6 @@ In this task, you will use Security Copilot in Purview to summarize and defend y
 3. Use the second alert to contrast behaviors that indicate elevated exfiltration risk versus standard or less concerning activity.
 4. Capture an investigation summary that explains the suspicious activity, affected content, and final risk assessment.
 5. Answer the remaining inline knowledge checks when prompted.
-
-<question>
-
-<question>
 
 ## Summary
 

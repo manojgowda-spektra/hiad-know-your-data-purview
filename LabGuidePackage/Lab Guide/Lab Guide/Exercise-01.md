@@ -30,8 +30,7 @@ In this task, you will examine the pre-indexed discovery results for the sensiti
 4. Open the underlying locations for the highest-volume result sets and confirm whether the content is already protected by a sensitivity label or appears unlabelled.
 5. Record your findings in a working note that separates labelled from unlabelled sensitive content.
 
-> [!Tip]
-> Content Explorer supports export of the view you are currently reviewing. Capture findings only after you verify that the selected view reflects the required data type and location scope.
+> **Tip:** Content Explorer supports export of the view you are currently reviewing. Capture findings only after you verify that the selected view reflects the required data type and location scope.
 
 ## Task 2: Identify the highest-risk SharePoint location
 
@@ -42,8 +41,6 @@ In this task, you will determine where the largest concentration of unprotected 
 3. Confirm your conclusion by comparing both the volume of sensitive matches and the absence of protection indicators.
 4. Document the exact SharePoint location you identified and explain why it represents higher risk than the other locations you reviewed.
 5. Add a short risk statement that explains the likely business impact if the location were overshared internally or externally.
-
-<question>
 
 ## Task 3: Export reporting evidence and summarize risk with Security Copilot
 
@@ -58,8 +55,6 @@ In this task, you will capture evidence from the seeded environment and produce 
    - the workload or location with the highest risk concentration
    - why unlabelled sensitive content creates immediate governance risk
    - whether the Copilot summary aligns with the discovery evidence
-
-<question>
 
 ## Summary
 
