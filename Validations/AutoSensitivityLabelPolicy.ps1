@@ -99,22 +99,15 @@ function Get-MinCountForSensitiveType {
         return $null
     }
 
-    $result = Find-MinCount -Node $ContentContainsSensitiveInformation -Target $SensitiveTypeName
-
-    # Last-resort text scan in case the service returns an unrecognised shape.
-    if ($null -eq $result) {
-        $text = $ContentContainsSensitiveInformation | ConvertTo-Json -Depth 10 -Compress -ErrorAction SilentlyContinue
-        if ([string]::IsNullOrWhiteSpace($text)) {
-            $text = $ContentContainsSensitiveInformation | Out-String -Width 8192
-        }
-        if ($text -match [regex]::Escape($SensitiveTypeName)) {
-            if ($text -match '(?i)"?mincount"?\s*[=:]\s*"?(\d+)"?') {
-                $result = [int]$matches[1]
-            }
-        }
-    }
-
-    return $result
+    # No text-scan fallback here on purpose. An earlier version scanned the whole
+    # serialised condition for the type name and then for any 'mincount' anywhere in
+    # that same dump, which is fail-open: a rule whose description merely mentions
+    # 'Credit Card Number and U.S. Social Security Number (SSN)' alongside an unrelated
+    # mincount of 5 was reported as correctly configured. The walk above already
+    # handles every shape the service returns - flat hashtables, the nested
+    # groups/sensitivetypes graph, and the deserialised PSCustomObject form - so a null
+    # here means the type genuinely is not in the condition, and the caller reports that.
+    return Find-MinCount -Node $ContentContainsSensitiveInformation -Target $SensitiveTypeName
 }
 
 function Connect-PurviewCompliance {

@@ -60,7 +60,7 @@ This lab uses a browser-based Microsoft 365 tenant with Microsoft Purview availa
 1. **Challenge 1: Discover sensitive data across the Microsoft 365 estate** focuses on validating sensitive information type detection, placing representative content, and instrumenting discovery with a simulation-mode policy.
 2. **Challenge 2: Classify data with sensitivity labels and auto-labelling** focuses on creating four exact Zava labels, publishing them, and configuring an auto-labelling policy in simulation mode.
 3. **Challenge 3: Prevent oversharing with Data Loss Prevention** focuses on creating two exact DLP policies, including a device-scoped policy that uses the built-in Generative AI Websites sensitive service domain group.
-4. **Challenge 4: Detect and investigate insider risk** focuses on configuring a departing-user insider risk policy and reasoning about the indicators and evidence it relies on.
+4. **Challenge 4: Configure insider risk detection for departing users** focuses on configuring a departing-user insider risk policy and reasoning about the indicators and evidence it relies on. A newly provisioned tenant has no HR connector, so this challenge is about building the detection correctly and explaining what it needs, not about triaging alerts.
 
 ## What to expect
 
