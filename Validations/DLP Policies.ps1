@@ -65,9 +65,13 @@ function Test-IsSimulationMode {
 function Get-RuleText {
     param([object[]]$Rules)
 
+    # -Width matters. Without it Out-String wraps at the host console width (80
+    # columns under the CloudLabs Functions host) and silently truncates long
+    # property values such as a rule's Comment or its notification text, so a
+    # correctly configured rule reads as a failure.
     $parts = @()
     foreach ($rule in $Rules) {
-        $parts += ($rule | Format-List * | Out-String)
+        $parts += ($rule | Format-List * | Out-String -Width 8192)
     }
 
     return ($parts -join "`n")
@@ -172,8 +176,11 @@ do {
                 $aiHasDeviceScope = $true
             }
         }
-        elseif (($aiPolicy | Format-List * | Out-String).ToLowerInvariant() -match 'endpoint' -or ($aiPolicy | Format-List * | Out-String).ToLowerInvariant() -match 'device') {
-            $aiHasDeviceScope = $true
+        else {
+            $aiPolicyText = ($aiPolicy | Format-List * | Out-String -Width 8192).ToLowerInvariant()
+            if ($aiPolicyText -match 'endpoint' -or $aiPolicyText -match 'device') {
+                $aiHasDeviceScope = $true
+            }
         }
 
         $blockHasRequiredLogic = Test-RuleContainsAll -RuleText $blockRuleText.ToLowerInvariant() -RequiredPatterns @(

@@ -33,22 +33,88 @@ function Get-MinCountForSensitiveType {
         [string]$SensitiveTypeName
     )
 
-    foreach ($entry in $ContentContainsSensitiveInformation) {
-        $entryString = $entry | ConvertTo-Json -Depth 10
-        if ($entryString -match [regex]::Escape($SensitiveTypeName)) {
-            if ($entry.PSObject.Properties.Name -contains 'minCount') {
-                return [int]$entry.minCount
+    # The service does not return a flat list. ContentContainsSensitiveInformation
+    # comes back as a nested graph - an array of groups, each holding a
+    # sensitivetypes array - so the type name matches somewhere inside the JSON
+    # while the top-level entry has no mincount property at all. Reading mincount
+    # off the outer entry therefore returns null for a correctly configured rule.
+    # Walk the graph and read mincount from the node that carries the matching name.
+
+    function Get-NodeValue {
+        param([object]$Node, [string[]]$Keys)
+        foreach ($key in $Keys) {
+            if ($Node -is [System.Collections.IDictionary]) {
+                foreach ($k in $Node.Keys) {
+                    if ("$k" -eq $key) { return $Node[$k] }
+                }
+            } else {
+                $prop = $Node.PSObject.Properties | Where-Object { $_.Name -eq $key } | Select-Object -First 1
+                if ($prop) { return $prop.Value }
             }
-            if ($entry.PSObject.Properties.Name -contains 'MinCount') {
-                return [int]$entry.MinCount
+        }
+        return $null
+    }
+
+    function Find-MinCount {
+        param([object]$Node, [string]$Target, [int]$Depth = 0)
+
+        if ($null -eq $Node -or $Depth -gt 12) { return $null }
+        if ($Node -is [string] -or $Node -is [ValueType]) { return $null }
+
+        $isRecord = $Node -is [System.Collections.IDictionary] -or
+                    ($Node.PSObject -and $Node.PSObject.Properties.Name.Count -gt 0 -and
+                     -not ($Node -is [System.Collections.IEnumerable]))
+
+        if ($isRecord) {
+            $name = Get-NodeValue -Node $Node -Keys @('name', 'Name')
+            if ($name -and "$name".Trim() -eq $Target.Trim()) {
+                $min = Get-NodeValue -Node $Node -Keys @('mincount', 'minCount', 'MinCount')
+                if ($null -ne $min -and "$min" -match '^\s*(\d+)\s*$') {
+                    return [int]$matches[1]
+                }
+                # A type named without an explicit mincount defaults to 1 in the service.
+                return 1
             }
-            if ($entry.PSObject.Properties.Name -contains 'mincount') {
-                return [int]$entry.mincount
+
+            $children = @()
+            if ($Node -is [System.Collections.IDictionary]) {
+                foreach ($k in $Node.Keys) { $children += , $Node[$k] }
+            } else {
+                foreach ($p in $Node.PSObject.Properties) { $children += , $p.Value }
+            }
+            foreach ($child in $children) {
+                $r = Find-MinCount -Node $child -Target $Target -Depth ($Depth + 1)
+                if ($null -ne $r) { return $r }
+            }
+            return $null
+        }
+
+        if ($Node -is [System.Collections.IEnumerable]) {
+            foreach ($item in $Node) {
+                $r = Find-MinCount -Node $item -Target $Target -Depth ($Depth + 1)
+                if ($null -ne $r) { return $r }
+            }
+        }
+
+        return $null
+    }
+
+    $result = Find-MinCount -Node $ContentContainsSensitiveInformation -Target $SensitiveTypeName
+
+    # Last-resort text scan in case the service returns an unrecognised shape.
+    if ($null -eq $result) {
+        $text = $ContentContainsSensitiveInformation | ConvertTo-Json -Depth 10 -Compress -ErrorAction SilentlyContinue
+        if ([string]::IsNullOrWhiteSpace($text)) {
+            $text = $ContentContainsSensitiveInformation | Out-String -Width 8192
+        }
+        if ($text -match [regex]::Escape($SensitiveTypeName)) {
+            if ($text -match '(?i)"?mincount"?\s*[=:]\s*"?(\d+)"?') {
+                $result = [int]$matches[1]
             }
         }
     }
 
-    return $null
+    return $result
 }
 
 function Connect-PurviewCompliance {
