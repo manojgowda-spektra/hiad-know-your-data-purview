@@ -8,7 +8,7 @@ Zava has asked you to act as a compliance and information protection practitione
 
 ## Lab Overview
 
-This lab is a challenge-based experience made up of four progressive challenges. You will first prove that Microsoft Purview detects Zava's sensitive data and instrument the estate to report on it, then create Zava-specific sensitivity labels and publishing controls, build DLP policies aligned to the reference design, and finally configure and reason about insider risk detection. All challenge work is done in the browser against Microsoft 365 and Microsoft Purview. A Windows lab virtual machine is also deployed for you as a workspace, but no Azure configuration is required in any challenge.
+This lab is a challenge-based experience made up of four progressive challenges. You will first prove that Microsoft Purview detects Zava's sensitive data and instrument the estate to report on it, then create Zava-specific sensitivity labels and publishing controls, build DLP policies aligned to the reference design, and finally configure and reason about insider risk detection. Most challenge work is done in the browser against Microsoft 365 and Microsoft Purview. One tenant-enablement step, in Challenge 2 Task 1, is run with PowerShell from the Windows lab virtual machine that is deployed for you. No Azure configuration is required in any challenge.
 
 ## Objectives
 
@@ -42,7 +42,7 @@ This lab uses a browser-based Microsoft 365 tenant with Microsoft Purview availa
 | **Data Loss Prevention** | Collaboration policies and endpoint DLP evidence | Challenge 3 |
 | **Insider Risk Management** | The departing-user policy you configure and its risk indicators | Challenge 4 |
 
-**Security Copilot in Purview** sits alongside these and is used to summarise findings in Challenges 1 and 4.
+**Security Copilot in Purview** is an optional enhancement that can summarise findings alongside these solution areas. It requires separately provisioned Security Copilot capacity, which is **not included in this environment**. Challenges 1 and 4 are completed without it.
 
 ## Components
 
@@ -53,7 +53,7 @@ This lab uses a browser-based Microsoft 365 tenant with Microsoft Purview availa
 5. **Auto-labelling in simulation mode** lets you validate scope and impact before any label is applied in production.
 6. **Endpoint DLP settings** include the built-in Generative AI Websites sensitive service domain group used by the device-scoped policy.
 7. **Insider Risk Management policy templates** provide the departing-user detection model used in the final challenge.
-8. **Security Copilot in Purview** helps summarize discovery findings and insider risk evidence during the challenges.
+8. **Security Copilot in Purview** is an optional enhancement that can summarize discovery findings and insider risk evidence. It requires separately provisioned Security Copilot capacity and is **not included in this environment**, so Challenges 1 and 4 are completed without it.
 
 ## Challenge Map
 

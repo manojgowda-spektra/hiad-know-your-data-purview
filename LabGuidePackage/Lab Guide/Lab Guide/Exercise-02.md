@@ -21,7 +21,51 @@ In this challenge, you turn on the tenant settings that label protection depends
 In this task, you will turn on the tenant settings that label protection depends on, then build the Zava label taxonomy exactly as required.
 
 1. Turn on sensitivity labels for Office files in SharePoint and OneDrive. This is off in a new tenant, and until it is on, the labels you create have no effect on content held in those two locations.
-2. Turn on sensitivity labels for Microsoft 365 groups and sites, then run a label sync to Microsoft Entra ID so that the container settings become configurable.
+2. Turn on sensitivity labels for Microsoft 365 groups and sites, then run a label sync to Microsoft Entra ID so that the container settings become configurable. This one is not a portal setting, so run the commands in the block below from **Windows PowerShell on your lab VM**, signing in with your lab account when prompted.
+
+   ```powershell
+   # 1. Turn on container labelling (the Group.Unified directory setting).
+   #    Microsoft.Graph.Authentication is the only module needed - the setting is
+   #    read and written through the Graph v1.0 groupSettings endpoint directly.
+   Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force -AllowClobber
+   Connect-MgGraph -Scopes 'Directory.ReadWrite.All'
+
+   $uri = 'https://graph.microsoft.com/v1.0/groupSettings'
+   $setting = (Invoke-MgGraphRequest -Method GET -Uri $uri).value |
+              Where-Object { $_.displayName -eq 'Group.Unified' }
+
+   if (-not $setting) {
+       # No Group.Unified setting exists yet, so create one from its template.
+       $template = (Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/groupSettingTemplates').value |
+                   Where-Object { $_.displayName -eq 'Group.Unified' }
+       $body = @{
+           templateId = $template.id
+           values     = @($template.values | ForEach-Object { @{ name = $_.name; value = $_.defaultValue } })
+       }
+       Invoke-MgGraphRequest -Method POST -Uri $uri -Body ($body | ConvertTo-Json -Depth 5) | Out-Null
+       $setting = (Invoke-MgGraphRequest -Method GET -Uri $uri).value |
+                  Where-Object { $_.displayName -eq 'Group.Unified' }
+   }
+
+   $values = @($setting.values | ForEach-Object {
+       @{ name = $_.name; value = $(if ($_.name -eq 'EnableMIPLabels') { 'True' } else { $_.value }) }
+   })
+   Invoke-MgGraphRequest -Method PATCH -Uri "$uri/$($setting.id)" `
+       -Body (@{ values = $values } | ConvertTo-Json -Depth 5)
+
+   # 2. Sync the labels into Microsoft Entra ID
+   Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
+   Connect-IPPSSession
+   Execute-AzureAdLabelSync
+   ```
+
+   Confirm the setting took effect by running the check below. It must print `True`.
+
+   ```powershell
+   ((Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/groupSettings').value |
+     Where-Object { $_.displayName -eq 'Group.Unified' }).values |
+     Where-Object { $_.name -eq 'EnableMIPLabels' } | Select-Object -ExpandProperty value
+   ```
 3. Create a sensitivity label named Zava Public and configure it with no encryption and no header, footer, or watermark.
 4. Create a sensitivity label named Zava Internal and configure it with a header exactly set to Zava Internal and no encryption.
 5. Create a sensitivity label named Zava Confidential. Enable encryption, choose to assign permissions now, and grant access to all users and groups in your organization so that no external identity is given rights. Enable content marking and add a watermark whose text is exactly Confidential.
@@ -29,7 +73,9 @@ In this task, you will turn on the tenant settings that label protection depends
 7. Ensure Zava Highly Confidential also includes Groups & sites, restricts external sharing to Only people in your organization, and applies a watermark exactly set to Highly Confidential.
 8. Review the four labels together and confirm the names and protection settings match the design requirements with no extra behaviors added.
 
-> **Note:** Steps 1 and 2 come first for a reason. While sensitivity labels are not enabled for groups and sites, the Groups & sites scope and its external sharing controls are visible in the label wizard but cannot be configured, so step 7 cannot be completed and Zava Highly Confidential will fail validation. Enabling it is a Microsoft Entra directory setting followed by a label sync run from Security and Compliance PowerShell, and it requires Global Administrator.
+> **Note:** Steps 1 and 2 come first for a reason. While sensitivity labels are not enabled for groups and sites, the Groups & sites scope and its external sharing controls are visible in the label wizard but cannot be configured, so step 7 cannot be completed and Zava Highly Confidential will fail validation.
+
+> **Note:** Step 2 is the only part of this lab that is not done in the browser, because turning on container labelling is a Microsoft Entra directory setting with no portal user interface. It needs Global Administrator, which your lab account holds. Allow a few minutes after `Execute-AzureAdLabelSync` before the Groups & sites options become selectable in the label wizard; if they are still greyed out, sign out of the Purview portal and back in.
 
 <validation step="Sensitivity Labels"/>
 

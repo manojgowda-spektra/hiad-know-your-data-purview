@@ -155,7 +155,13 @@ do {
 
         $policyName = 'Zava Auto-Label Policy'
         $policy = Get-AutoSensitivityLabelPolicy -Identity $policyName -ErrorAction Stop
+        # A policy with no rule is the normal state until the attendee adds one, and
+        # Get-AutoSensitivityLabelRule simply returns nothing in that case rather than
+        # throwing. Passing the resulting null into Get-MinCountForSensitiveType raises a
+        # parameter-binding error, so the attendee sees a .NET exception after three
+        # retries instead of the failure reason below. Track it and skip the reads.
         $rule = Get-AutoSensitivityLabelRule -Policy $policyName -ErrorAction Stop | Select-Object -First 1
+        $hasRule = $null -ne $rule
 
         $allLabels = Get-Label -ErrorAction Stop
         $targetLabelName = 'Zava Highly Confidential'
@@ -180,11 +186,18 @@ do {
                             ($policy.ApplySensitivityLabel -eq $targetLabel.DisplayName)
         }
 
-        $sensitiveInfoConfig = $rule.ContentContainsSensitiveInformation
-        $creditCardMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'Credit Card Number'
-        $ssnMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'U.S. Social Security Number (SSN)'
-        if ($null -eq $ssnMinCount) {
-            $ssnMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'U.S. Social Security Number'
+        $sensitiveInfoConfig = if ($hasRule) { $rule.ContentContainsSensitiveInformation } else { $null }
+        $creditCardMinCount = $null
+        $ssnMinCount = $null
+
+        # Get-MinCountForSensitiveType declares both parameters mandatory, so it is only
+        # called once there is something to walk.
+        if ($null -ne $sensitiveInfoConfig) {
+            $creditCardMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'Credit Card Number'
+            $ssnMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'U.S. Social Security Number (SSN)'
+            if ($null -eq $ssnMinCount) {
+                $ssnMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'U.S. Social Security Number'
+            }
         }
 
         $hasCreditCard = $null -ne $creditCardMinCount
@@ -221,10 +234,16 @@ do {
             if (-not $exchangeEnabled) {
                 $failureReasons += 'Exchange is not included in policy locations.'
             }
-            if (-not $hasCreditCard) {
+            if (-not $hasRule) {
+                # Reported on its own: without a rule there is no sensitive information
+                # configuration to comment on, so the per-type reasons below would only
+                # repeat this one.
+                $failureReasons += 'The policy has no rule. Add a rule with Credit Card Number and U.S. Social Security Number (SSN) at a minimum count of 5.'
+            }
+            if ($hasRule -and -not $hasCreditCard) {
                 $failureReasons += 'Credit Card Number is not present in the policy rule.'
             }
-            if (-not $hasSsn) {
+            if ($hasRule -and -not $hasSsn) {
                 $failureReasons += 'U.S. Social Security Number (SSN) is not present in the policy rule.'
             }
             if ($hasCreditCard -and $creditCardMinCount -ne 5) {

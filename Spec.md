@@ -3,10 +3,12 @@ Know Your Data - Discover, Classify and Protect Sensitive Information with Micro
 Lab Overview
 • Cloud: none
 • Duration: 240 minutes
-• Exercises: 4 (Discover sensitive data across the Microsoft 365 estate, Classify data with sensitivity labels and auto-labelling, Prevent oversharing with Data Loss Prevention, Detect and investigate insider risk with Security Copilot)
+• Exercises: 4 (Discover sensitive data across the Microsoft 365 estate, Classify data with sensitivity labels and auto-labelling, Prevent oversharing with Data Loss Prevention, Configure insider risk detection for departing users)
 • Validations: 4
-• Deployed services: Microsoft 365 E5 demo tenant, Microsoft Purview Content Explorer, Exchange, SharePoint, OneDrive, Teams, reference sensitivity labels, auto-labelling simulation, Endpoint DLP, HR data connector, insider risk alerts, Security Copilot in Purview
-• Scenario: Learners act as compliance and information protection practitioners for Zava in a pre-provisioned Microsoft 365 E5 demo tenant. They use Microsoft Purview to review pre-seeded discovery evidence, create and compare Zava-specific sensitivity and auto-labelling configurations, define Data Loss Prevention controls to reduce oversharing, and investigate pre-seeded insider risk alerts with Security Copilot in Purview.
+• Deployed services: Microsoft 365 E5 demo tenant with Exchange, SharePoint, OneDrive and Teams; Microsoft Purview; a Windows lab virtual machine used as a workspace
+• Built by the learner: sensitivity labels and a label publishing policy, an auto-labelling policy in simulation mode, Data Loss Prevention policies, and an insider risk policy. The tenant is empty of lab content on delivery, so no labels, policies, sample documents or alerts are pre-seeded.
+• Scenario: Learners act as compliance and information protection practitioners for Zava in a Microsoft 365 E5 demo tenant that starts with no lab content in place. They place reserved test-value content into SharePoint and OneDrive, instrument discovery with a Data Loss Prevention policy in simulation mode, create and publish the Zava sensitivity labels together with an auto-labelling policy, define Data Loss Prevention controls to reduce oversharing, and configure an insider risk policy for departing users.
+• Not provisioned: Security Copilot in Purview is an optional enhancement that requires separately provisioned capacity. It is not included in this environment and no exercise depends on it.
 
 This Package Includes
 

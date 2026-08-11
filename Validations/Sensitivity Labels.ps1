@@ -265,37 +265,96 @@ do {
             # authenticated users' stores AuthenticatedUsers - neither contains 'all',
             # 'organization', 'tenant' or 'internal'.
             $confidentialRights = Get-LabelActionSetting -Label $confidential -Type 'encrypt' -Key 'rightsdefinitions'
+
+            # rightsdefinitions is stored as JSON, normally an array of
+            #   {"Identity":"user@zava.com","Rights":"VIEW,VIEWRIGHTSDATA,..."}
+            # Deserialise it and read Identity from each element; only fall back to the
+            # documented Identity:Rights string form when that fails. Anything neither
+            # form can account for is a failure. The previous version split on ';' and ':'
+            # and silently accepted whatever came out, so a grant to an external domain
+            # that did not split cleanly was reported as internal-only - fail-open.
             $rightsIdentities = @()
+            $unreadableRights = @()
+
+            $rightsEntries = @()
             foreach ($entry in @($confidentialRights)) {
                 if ($null -eq $entry) { continue }
-                if ($entry.PSObject.Properties['Identity'] -and -not [string]::IsNullOrWhiteSpace([string]$entry.Identity)) {
-                    $rightsIdentities += ([string]$entry.Identity).Trim().ToLowerInvariant()
+                if ($entry -is [string]) {
+                    if ([string]::IsNullOrWhiteSpace($entry)) { continue }
+                    $parsed = $null
+                    try { $parsed = $entry | ConvertFrom-Json -ErrorAction Stop } catch { $parsed = $null }
+                    if ($null -ne $parsed) { $rightsEntries += @($parsed) } else { $rightsEntries += , $entry }
+                }
+                else {
+                    $rightsEntries += , $entry
+                }
+            }
+
+            foreach ($entry in $rightsEntries) {
+                if ($null -eq $entry) { continue }
+
+                if ($entry -isnot [string]) {
+                    $identity = if ($entry.PSObject.Properties['Identity']) { [string]$entry.Identity } else { '' }
+                    if (-not [string]::IsNullOrWhiteSpace($identity)) {
+                        $rightsIdentities += $identity.Trim().ToLowerInvariant()
+                    }
+                    else {
+                        # An object with no Identity is not something this check can judge.
+                        $text = $entry | ConvertTo-Json -Depth 5 -Compress -ErrorAction SilentlyContinue
+                        if ([string]::IsNullOrWhiteSpace($text)) { $text = ($entry | Out-String).Trim() }
+                        $unreadableRights += $text
+                    }
                     continue
                 }
-                # Documented Identity:Rights string form, one or more pairs per entry.
-                foreach ($pair in (([string]$entry) -split ';')) {
-                    if ([string]::IsNullOrWhiteSpace($pair)) { continue }
-                    $rightsIdentities += ((($pair -split ':')[0]).Trim()).ToLowerInvariant()
+
+                # Fallback form: 'identity:rights' pairs separated by ';'. Every pair must
+                # yield a non-empty identity and at least one right, otherwise the value is
+                # not in this form and must not be guessed at.
+                $pairs = @(([string]$entry) -split ';' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                $pairIdentities = @()
+                $wellFormed = $pairs.Count -gt 0
+                foreach ($pair in $pairs) {
+                    $parts = $pair -split ':'
+                    if ($parts.Count -lt 2) { $wellFormed = $false; break }
+                    $name = $parts[0].Trim()
+                    $rights = ($parts[1..($parts.Count - 1)] -join ':').Trim()
+                    if ([string]::IsNullOrWhiteSpace($name) -or [string]::IsNullOrWhiteSpace($rights)) { $wellFormed = $false; break }
+                    $pairIdentities += $name.ToLowerInvariant()
                 }
+
+                if ($wellFormed) { $rightsIdentities += $pairIdentities }
+                else { $unreadableRights += ([string]$entry).Trim() }
             }
 
             $tenantDomain = if ($userName -like '*@*') { (($userName -split '@')[-1]).Trim().ToLowerInvariant() } else { '' }
             $externalIdentities = @()
+            $unresolvedIdentities = @()
             foreach ($identity in $rightsIdentities) {
                 if ([string]::IsNullOrWhiteSpace($identity)) { continue }
                 if ($identity -in @('authenticatedusers', 'allauthenticatedusers', 'allstaff', 'myorganization')) { continue }
                 $domain = if ($identity -like '*@*') { ($identity -split '@')[-1] } elseif ($identity -like '*.*') { $identity } else { '' }
-                if ([string]::IsNullOrWhiteSpace($domain)) { continue }
+                if ([string]::IsNullOrWhiteSpace($domain)) {
+                    # No domain and not a known organization-wide identity, so there is no
+                    # way to place it inside the tenant. Report it instead of assuming.
+                    $unresolvedIdentities += $identity
+                    continue
+                }
                 if ($domain -like '*.onmicrosoft.com') { continue }
                 if ($tenantDomain -and $domain -eq $tenantDomain) { continue }
                 $externalIdentities += $identity
             }
 
-            if ($rightsIdentities.Count -eq 0) {
+            if ($rightsIdentities.Count -eq 0 -and $unreadableRights.Count -eq 0) {
                 $failures.Add("Zava Confidential must use encryption with permissions assigned to users in your organization.")
             }
-            elseif ($externalIdentities.Count -gt 0) {
+            if ($unreadableRights.Count -gt 0) {
+                $failures.Add("Zava Confidential encryption permissions could not be read, so internal-only access cannot be confirmed. Unrecognised rights value: $($unreadableRights -join ' | ').")
+            }
+            if ($externalIdentities.Count -gt 0) {
                 $failures.Add("Zava Confidential must assign encryption permissions for internal users only. Rights are granted to: $($externalIdentities -join ', ').")
+            }
+            if ($unresolvedIdentities.Count -gt 0) {
+                $failures.Add("Zava Confidential must assign encryption permissions for internal users only. This identity could not be confirmed as belonging to your organization: $($unresolvedIdentities -join ', ').")
             }
 
             $highly = $labels['Zava Highly Confidential']
