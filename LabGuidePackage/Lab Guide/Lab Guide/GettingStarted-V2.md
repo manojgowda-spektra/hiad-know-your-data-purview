@@ -31,6 +31,32 @@ This lab is a challenge-based experience made up of four progressive challenges.
 3. Confirm that you can reach Information Protection, Data Loss Prevention and Insider Risk Management under Solutions. If any of them opens as a read-only overview page, your account is missing the required Microsoft Purview role and you should contact your lab operator before continuing.
 4. Keep your deployment reference available as **Deployment ID: <inject key="DeploymentID" enableCopy="false"/>** in case your lab operator asks you to confirm the active environment.
 
+## Turn on the audit log before you start
+
+**Do this now, before Challenge 1.** It can take up to an hour to take effect, and Challenge 2 cannot
+be completed until it has. Starting it here means it finishes while you work on Challenge 1.
+
+A newly provisioned tenant has the unified audit log switched off. Microsoft Purview refuses to
+create an auto-labelling policy while it is off, and Insider Risk Management has no activity to read.
+
+1. In the Microsoft Purview portal, go to **Solutions** > **Audit**.
+2. If a banner appears reading **Start recording user and admin activity**, select it and confirm.
+3. If there is no banner, auditing is already on and there is nothing to do.
+4. Carry on to Challenge 1 immediately. Do not wait for it.
+
+> [!Note]
+> Auditing can also be switched on from PowerShell, but the portal banner is more reliable on a fresh
+> tenant. If you prefer PowerShell, run this on the lab VM and expect it to fail until the tenant has
+> finished provisioning:
+>
+> ```powershell
+> Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
+> Connect-ExchangeOnline
+> if ((Get-OrganizationConfig).IsDehydrated) { Enable-OrganizationCustomization }
+> Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true
+> Get-AdminAuditLogConfig | Format-List UnifiedAuditLogIngestionEnabled   # expect True
+> ```
+
 ## Architecture
 
 This lab uses a browser-based Microsoft 365 tenant with Microsoft Purview available. You work from your browser into the Microsoft Purview portal, and from there into four solution areas:

@@ -20,7 +20,16 @@ In this challenge, you turn on the tenant settings that label protection depends
 
 In this task, you will turn on the tenant settings that label protection depends on, then build the Zava label taxonomy exactly as required.
 
-1. Turn on sensitivity labels for Office files in SharePoint and OneDrive. This is off in a new tenant, and until it is on, the labels you create have no effect on content held in those two locations.
+1. Turn on sensitivity labels for Office files in SharePoint and OneDrive. This is off in a new tenant, and until it is on, the labels you create have no effect on content held in those two locations. Do it in the portal: go to **Settings** > **Information Protection**, find the setting for processing content in Office online files in SharePoint and OneDrive, and turn it on. If the portal does not offer it, run this on the lab VM instead:
+
+   ```powershell
+   Install-Module Microsoft.Online.SharePoint.PowerShell -Scope CurrentUser -Force -AllowClobber
+   Connect-SPOService -Url https://<your-tenant>-admin.sharepoint.com
+   Set-SPOTenant -EnableAIPIntegration $true
+   Get-SPOTenant | Select-Object EnableAIPIntegration      # expect True
+   ```
+
+   Replace `<your-tenant>` with the first part of your lab tenant name, which you can read from your sign-in address.
 2. Turn on sensitivity labels for Microsoft 365 groups and sites, then run a label sync to Microsoft Entra ID so that the container settings become configurable. This one is not a portal setting, so run the commands in the block below from **Windows PowerShell on your lab VM**, signing in with your lab account when prompted.
 
    ```powershell
@@ -75,7 +84,13 @@ In this task, you will turn on the tenant settings that label protection depends
 
 > **Note:** Steps 1 and 2 come first for a reason. While sensitivity labels are not enabled for groups and sites, the Groups & sites scope and its external sharing controls are visible in the label wizard but cannot be configured, so step 7 cannot be completed and Zava Highly Confidential will fail validation.
 
-> **Note:** Step 2 is the only part of this lab that is not done in the browser, because turning on container labelling is a Microsoft Entra directory setting with no portal user interface. It needs Global Administrator, which your lab account holds. Allow a few minutes after `Execute-AzureAdLabelSync` before the Groups & sites options become selectable in the label wizard; if they are still greyed out, sign out of the Purview portal and back in.
+> **Note:** Steps 1 and 2 are the only parts of this lab that may need PowerShell rather than the browser. Container labelling in step 2 is a Microsoft Entra directory setting with no portal user interface at all. Both need Global Administrator, which your lab account holds. Allow a few minutes after `Execute-AzureAdLabelSync` before the Groups & sites options become selectable in the label wizard; if they are still greyed out, sign out of the Purview portal and back in.
+
+> [!Note]
+> The first time you create a label with encryption, Microsoft Purview activates Azure Rights
+> Management for the tenant. On a newly provisioned tenant this service starts dormant, so the first
+> save can take a minute or fail once with a message about the tenant not being found in Azure Rights
+> Management. If that happens, wait a minute and save the label again — the second attempt succeeds.
 
 <validation step="Sensitivity Labels"/>
 
