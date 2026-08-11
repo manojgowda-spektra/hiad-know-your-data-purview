@@ -8,7 +8,7 @@ Zava now has evidence of where sensitive data sits, but nothing in the tenant ye
 
 ## Overview
 
-In this challenge, you turn on the tenant settings that label protection depends on, create four sensitivity labels with exact names and behaviors, publish them through a global label policy, and configure a simulation-based auto-labeling policy that applies Zava Confidential to Microsoft 365 data.
+In this challenge, you turn on the tenant settings that label protection depends on, create four sensitivity labels with exact names and behaviors, publish them through a global label policy, and configure a simulation-based auto-labeling policy that applies Zava Highly Confidential to Microsoft 365 data.
 
 ## Objectives
 
@@ -53,11 +53,11 @@ In this task, you will make the taxonomy usable by publishing it, and settle the
 In this task, you will define a simulation-first auto-labeling policy for Microsoft 365 workloads. The configured policy is the deliverable here, not a finished simulation.
 
 1. Create an auto-labeling policy named Zava Auto-Label Policy.
-2. Configure the policy to apply the Zava Confidential label you created in Task 1 and published in Task 2. Auto-labeling cannot apply a label whose encryption uses user-defined permissions, which is how Zava Highly Confidential is configured, so Zava Confidential is the correct target here.
+2. Configure the policy to apply the Zava Highly Confidential label you created in Task 1 and published in Task 2. Content holding five or more credit card numbers or Social Security numbers is Zava's highest-risk material, so it takes the highest-risk label. This is why Task 1 had you configure that label with Assign permissions now rather than a user-defined-permissions option: auto-labeling cannot write a user-defined-permissions label to SharePoint or OneDrive content.
 3. Target SharePoint, OneDrive, and Exchange as the policy locations.
 4. Add Credit Card Number and U.S. Social Security Number (SSN) to the same condition group, set the group to Any of these, and set the instance count on each type to a minimum of 5. Setting the group to All of these would require both types in the same document and would report almost nothing against the content you placed in Challenge 1.
 5. Run the policy in simulation mode, leave the option that automatically turns the policy on after seven days unselected, and do not turn the policy on yourself.
-6. Open the saved policy and confirm it shows Zava Confidential as the label to apply, all three locations, and both sensitive information types at a minimum count of 5. These are the values this challenge is graded on.
+6. Open the saved policy and confirm it shows Zava Highly Confidential as the label to apply, all three locations, and both sensitive information types at a minimum count of 5. These are the values this challenge is graded on.
 7. Working from the policy conditions rather than from results, predict which of the documents you placed in Challenge 1 this policy would label. For each document, record the sensitive information type it contains and how many instances of that type are present, then state whether the count reaches the minimum of 5. A document holding a single credit card number does not match, and that is the threshold working as designed rather than a detection failure.
 8. Record a short outcome statement explaining what Zava gains by proving this policy in simulation first, and what evidence the team would want before turning it on.
 
@@ -69,4 +69,4 @@ In this task, you will define a simulation-first auto-labeling policy for Micros
 
 ## Summary
 
-You turned on the tenant settings that label protection depends on, created four Zava sensitivity labels, published them through Zava Global Label Policy, and configured Zava Auto-Label Policy in simulation mode to apply Zava Confidential using the required locations, sensitive information types, and thresholds. Zava now owns its classification baseline end to end, and the DLP and investigation work in the next challenges builds directly on it.
+You turned on the tenant settings that label protection depends on, created four Zava sensitivity labels, published them through Zava Global Label Policy, and configured Zava Auto-Label Policy in simulation mode to apply Zava Highly Confidential using the required locations, sensitive information types, and thresholds. Zava now owns its classification baseline end to end, and the DLP and investigation work in the next challenges builds directly on it.
