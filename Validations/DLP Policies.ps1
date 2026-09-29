@@ -417,6 +417,15 @@ do {
 # Post-loop: if every attempt failed, emit a final failure JSON so CloudLabs
 # always sees a structured result.
 if (-not $found) {
+    # Keep the last detailed result. Replacing it with a generic message hid the specific
+    # setting that failed, so a learner could not tell what to fix.
+    if (-not [string]::IsNullOrWhiteSpace($message)) {
+        Push-OutputBinding -Name Response -Clobber -Value ([HttpResponseContext]@{
+            StatusCode = [HttpStatusCode]::OK
+            Body       = $message
+        })
+        return
+    }
     $message = @{
         Status  = 'Failed'
         Message = "DLP Policies validation did not succeed after 3 attempts. Required policies 'Block External Sharing of Highly Confidential' and/or 'Protect Data from AI Apps' were not found, or did not match the expected simulation mode, workload locations, rule names, rule actions and activity configuration checks."
