@@ -191,8 +191,8 @@ do {
         $blockPolicyName = 'Block External Sharing of Highly Confidential'
         $aiPolicyName = 'Protect Data from AI Apps'
 
-        $blockPolicy = Get-DlpCompliancePolicy -Identity $blockPolicyName -ErrorAction Stop -IncludeRulesMetadata
-        $aiPolicy = Get-DlpCompliancePolicy -Identity $aiPolicyName -ErrorAction Stop -IncludeRulesMetadata
+        $blockPolicy = Get-DlpCompliancePolicy -Identity $blockPolicyName -ErrorAction Stop -IncludeRulesMetadata:$true
+        $aiPolicy = Get-DlpCompliancePolicy -Identity $aiPolicyName -ErrorAction Stop -IncludeRulesMetadata:$true
 
         $blockRules = @(Get-DlpComplianceRule -Policy $blockPolicyName -ErrorAction Stop)
         $aiRules = @(Get-DlpComplianceRule -Policy $aiPolicyName -ErrorAction Stop)
