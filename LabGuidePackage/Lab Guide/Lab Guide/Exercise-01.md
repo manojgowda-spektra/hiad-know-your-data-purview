@@ -23,7 +23,7 @@ In this task, you will prove that the classification engine recognises the data 
 1. Open the sensitive information type definitions in Microsoft Purview and locate the four types Zava depends on: **Credit Card Number**, **U.S. Social Security Number (SSN)**, **IBAN**, and a health-related type such as **All Full Names** combined with a health condition indicator.
 2. Review the detection definition for Credit Card Number and note the confidence level and the supporting evidence the pattern requires.
 3. Use the built-in test capability for Credit Card Number with sample content containing the reserved test value `4111 1111 1111 1111` and confirm the type reports a match.
-4. Repeat the test for U.S. Social Security Number (SSN) using a value in the documented `xxx-xx-xxxx` format.
+4. Repeat the test for U.S. Social Security Number (SSN) using the reserved test value `555-12-3456` next to the words **Social Security Number**. Do not use `123-45-6789` or any value starting with 9: Microsoft Purview deliberately does not detect published specimen numbers or invalid area numbers.
 5. Record which types matched, at what confidence, and what evidence each one required. This is your baseline: any later gap in discovery is a coverage problem, not a detection problem.
 
 > **Tip:** Testing a sensitive information type returns a result immediately. This is the only discovery step in the lab that does not depend on background processing, which makes it the right place to start.
@@ -37,7 +37,7 @@ In this task, you will create the content that Zava's discovery controls will ac
    | Document | Include these reserved test values |
    |---|---|
    | Customer payment record | Credit card `4111 1111 1111 1111` and `5500 0000 0000 0004`, each with a cardholder name and an expiry date so the type has its supporting evidence |
-   | Payroll extract | U.S. Social Security Numbers `123-45-6789` and `987-65-4321`, each next to an employee name |
+   | Payroll extract | U.S. Social Security Numbers `555-12-3456`, `447-31-8756` and `612-48-2291`, each next to an employee name and the label **Social Security Number** |
    | Patient contact list | IBAN `GB82 WEST 1234 5698 7654 32`, plus patient names alongside a health condition such as diabetes or asthma |
 
    Include at least five records in each document. A single match can fall below the confidence threshold, whereas a realistic volume detects reliably and gives you something meaningful to compare in Task 3.

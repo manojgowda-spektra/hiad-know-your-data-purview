@@ -210,8 +210,8 @@ do {
             'Exchange'   = @('ExchangeLocation')
             'SharePoint' = @('SharePointLocation')
             'OneDrive'   = @('OneDriveLocation')
-            'Teams'      = @('TeamsLocation')
         }
+        # Teams is excluded: Microsoft rejects a sensitivity-label condition on a policy that includes Teams.
 
         $blockPresentLocations = @()
         $blockMissingLocations = @()
@@ -339,7 +339,7 @@ do {
             $found = $true
             $message = @{
                 Status  = 'Succeeded'
-                Message = "Validated DLP policies '$blockPolicyName' and '$aiPolicyName'. Both are in simulation mode. '$blockPolicyName' is enabled for Exchange, SharePoint, OneDrive and Teams, and its rule '$expectedBlockRuleName' has BlockAccess set to true, an access scope of people outside the organisation, a condition on the '$expectedLabelName' sensitivity label, a user notification, and an incident report or alert. '$aiPolicyName' is scoped to Devices only, its rule carries a description, and its rules include the Generative AI Websites domain group with upload-to-restricted-cloud-service-domain and paste-to-supported-browsers activities."
+                Message = "Validated DLP policies '$blockPolicyName' and '$aiPolicyName'. Both are in simulation mode. '$blockPolicyName' is enabled for Exchange, SharePoint and OneDrive, and its rule '$expectedBlockRuleName' has BlockAccess set to true, an access scope of people outside the organisation, a condition on the '$expectedLabelName' sensitivity label, a user notification, and an incident report or alert. '$aiPolicyName' is scoped to Devices only, its rule carries a description, and its rules include the Generative AI Websites domain group with upload-to-restricted-cloud-service-domain and paste-to-supported-browsers activities."
             } | ConvertTo-Json
         }
         else {

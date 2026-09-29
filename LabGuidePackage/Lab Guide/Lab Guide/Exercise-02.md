@@ -30,7 +30,7 @@ In this task, you will turn on the tenant settings that label protection depends
    ```
 
    Replace `<your-tenant>` with the first part of your lab tenant name, which you can read from your sign-in address.
-2. Turn on sensitivity labels for Microsoft 365 groups and sites, then run a label sync to Microsoft Entra ID so that the container settings become configurable. This one is not a portal setting, so run the commands in the block below from **Windows PowerShell on your lab VM**, signing in with your lab account when prompted.
+2. Turn on sensitivity labels for Microsoft 365 groups and sites, then run a label sync to Microsoft Entra ID so that the container settings become configurable. This one is not a portal setting, so run the commands in the block below from **Windows PowerShell on your lab VM**, signing in with your lab account when prompted. Run part 1 in a **new** PowerShell window, then close it and run part 2 in another new window: Microsoft Graph and Security & Compliance PowerShell fail to sign in when both are loaded in one window (*Method not found* or *Object reference not set to an instance of an object*).
 
    ```powershell
    # 1. Turn on container labelling (the Group.Unified directory setting).
@@ -62,7 +62,7 @@ In this task, you will turn on the tenant settings that label protection depends
    Invoke-MgGraphRequest -Method PATCH -Uri "$uri/$($setting.id)" `
        -Body (@{ values = $values } | ConvertTo-Json -Depth 5)
 
-   # 2. Sync the labels into Microsoft Entra ID
+   # 2. In a NEW PowerShell window: sync the labels into Microsoft Entra ID
    Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
    Connect-IPPSSession
    Execute-AzureAdLabelSync

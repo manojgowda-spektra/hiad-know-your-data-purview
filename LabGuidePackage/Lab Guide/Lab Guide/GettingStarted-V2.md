@@ -27,9 +27,29 @@ This lab is a challenge-based experience made up of four progressive challenges.
 ## Sign-in
 
 1. Open <https://purview.microsoft.com/> and sign in with Username: <inject key="AzureAdUserEmail"/> and the access code shown as **Temporary Access Pass** on your Environment tab: <inject key="AzureAdUserPassword"/>.
+
+   > [!Note]
+   > On first sign-in you may be asked to set up Microsoft Authenticator or other security info. You can skip it - select **Skip for now** (or equivalent) and continue. It is not required for this lab.
+
 2. **Confirm you are in the lab tenant before you begin.** Open **Settings** and check that **Account overview** shows the lab tenant name, not your own organization. If you are on a corporate device, your browser may sign you in to your employer's tenant automatically, and the portal looks identical. If that happens, sign out and sign back in with the lab account above.
-3. Confirm that you can reach Information Protection, Data Loss Prevention and Insider Risk Management under Solutions. If any of them opens as a read-only overview page, your account is missing the required Microsoft Purview role and you should contact your lab operator before continuing.
-4. Keep your deployment reference available as **Deployment ID: <inject key="DeploymentID" enableCopy="false"/>** in case your lab operator asks you to confirm the active environment.
+3. Confirm the lab licence. Open <https://portal.office.com/account/#subscriptions> and check that **Microsoft 365 E5** is listed under your licences. If it is missing, stop and contact your lab operator: without it Microsoft Purview shows read-only pages and trial offers instead of the solutions this lab uses.
+4. Add yourself to the Microsoft Purview role groups the lab uses. Your account is a Global Administrator, but that alone does not grant every Purview role; without them some solutions open as read-only pages and the Insider Risk Management **Alerts** page is hidden. On the lab VM, open a new **Windows PowerShell** window, run the commands below, and sign in with your lab account when prompted. Paste your username, <inject key="AzureAdUserEmail"/>, when the script asks for it.
+
+   ```powershell
+   Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
+   Connect-IPPSSession
+   $me = Read-Host "Paste your lab username"
+   foreach ($group in 'InformationProtection','ContentExplorerListViewer','ContentExplorerContentViewer','InsiderRiskManagement','ComplianceAdministrator') {
+       try { Add-RoleGroupMember -Identity $group -Member $me -ErrorAction Stop; "Added to $group" }
+       catch { "$group : $($_.Exception.Message)" }
+   }
+   Get-RoleGroupMember -Identity InsiderRiskManagement | Select-Object Name
+   ```
+
+   Confirm that your account is listed. Role-group changes can take up to 30 minutes to reach the portal, so do this now. If a line reports that you are already a member, that group is fine.
+
+5. Confirm that you can reach **Information Protection**, **Data Loss Prevention** and **Insider Risk Management** from **Solutions** in the left navigation. If one still opens as a read-only page, wait a few minutes for the role groups to take effect and refresh.
+6. Keep your deployment reference available as **Deployment ID: <inject key="DeploymentID" enableCopy="false"/>** in case your lab operator asks you to confirm the active environment.
 
 ## Turn on the audit log before you start
 
@@ -52,7 +72,7 @@ create an auto-labelling policy while it is off, and Insider Risk Management has
 > ```powershell
 > Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
 > Connect-ExchangeOnline
-> if ((Get-OrganizationConfig).IsDehydrated) { Enable-OrganizationCustomization }
+> Enable-OrganizationCustomization   # run even if IsDehydrated reports False; "already enabled" is fine
 > Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true
 > Get-AdminAuditLogConfig | Format-List UnifiedAuditLogIngestionEnabled   # expect True
 > ```
