@@ -73,7 +73,7 @@ In this task, you will turn on the tenant settings that label protection depends
    ```powershell
    ((Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/groupSettings').value |
      Where-Object { $_.displayName -eq 'Group.Unified' }).values |
-     Where-Object { $_.name -eq 'EnableMIPLabels' } | Select-Object -ExpandProperty value
+     Where-Object { $_.name -eq 'EnableMIPLabels' } | ForEach-Object { $_.value }
    ```
 3. Create a sensitivity label named Zava Public and configure it with no encryption and no header, footer, or watermark.
 4. Create a sensitivity label named Zava Internal and configure it with a header exactly set to Zava Internal and no encryption.

@@ -385,8 +385,16 @@ do {
             if (-not ($contentType -match 'Site|UnifiedGroup')) {
                 $failures.Add("Zava Highly Confidential must include Groups & sites in scope.")
             }
-            $sharingControl = [string](Get-LabelActionSetting -Label $highly -Type 'protectsiteandgroup' -Key 'sharingcapability')
-            if (-not ($sharingControl -match 'OnlyPeopleInYourOrganization|Disabled')) {
+            # Site external sharing is stored as {"Type":"protectsite",...,"Settings":[...,
+            # {"Key":"externalsharingcontroltype","Value":"Disabled"}]}; 'Only people in your
+            # organization' is the value Disabled. Read from a live label (2026-09-29): there is
+            # no protectsiteandgroup/sharingcapability entry, so the old lookup failed every
+            # correctly built label.
+            $sharingControl = [string](Get-LabelActionSetting -Label $highly -Type 'protectsite' -Key 'externalsharingcontroltype')
+            if ([string]::IsNullOrWhiteSpace($sharingControl)) {
+                $sharingControl = [string](Get-LabelActionSetting -Label $highly -Type 'protectsiteandgroup' -Key 'sharingcapability')
+            }
+            if (-not ($sharingControl.Trim() -match '^(Disabled|OnlyPeopleInYourOrganization)$')) {
                 $failures.Add("Zava Highly Confidential must restrict external sharing to Only people in your organization.")
             }
 

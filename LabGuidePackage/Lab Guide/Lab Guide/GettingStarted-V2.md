@@ -60,7 +60,7 @@ A newly provisioned tenant has the unified audit log switched off. Microsoft Pur
 create an auto-labelling policy while it is off, and Insider Risk Management has no activity to read.
 
 1. In the Microsoft Purview portal, go to **Solutions** > **Audit**.
-2. If a banner appears reading **Start recording user and admin activity**, select it and confirm.
+2. If a banner appears reading **Start recording user and admin activity**, select it. If a **Complete organizational setup** prompt asks whether to complete the setup process for your organization now, select **Yes**.
 3. If there is no banner, auditing is already on and there is nothing to do.
 4. Carry on to Challenge 1 immediately. Do not wait for it.
 

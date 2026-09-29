@@ -153,8 +153,8 @@ do {
         # throwing. Passing the resulting null into Get-MinCountForSensitiveType raises a
         # parameter-binding error, so the attendee sees a .NET exception after three
         # retries instead of the failure reason below. Track it and skip the reads.
-        $rule = Get-AutoSensitivityLabelRule -Policy $policyName -ErrorAction Stop | Select-Object -First 1
-        $hasRule = $null -ne $rule
+        $rules = @(Get-AutoSensitivityLabelRule -Policy $policyName -ErrorAction Stop)
+        $hasRule = $rules.Count -gt 0
 
         $allLabels = Get-Label -ErrorAction Stop
         $targetLabelName = 'Zava Highly Confidential'
@@ -179,23 +179,42 @@ do {
                             ($policy.ApplySensitivityLabel -eq $targetLabel.DisplayName)
         }
 
-        $sensitiveInfoConfig = if ($hasRule) { $rule.ContentContainsSensitiveInformation } else { $null }
-        $creditCardMinCount = $null
-        $ssnMinCount = $null
-
-        # Get-MinCountForSensitiveType declares both parameters mandatory, so it is only
-        # called once there is something to walk.
-        if ($null -ne $sensitiveInfoConfig) {
-            $creditCardMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'Credit Card Number'
-            $ssnMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'U.S. Social Security Number (SSN)'
-            if ($null -eq $ssnMinCount) {
-                $ssnMinCount = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $sensitiveInfoConfig -SensitiveTypeName 'U.S. Social Security Number'
+        # A rule built in the portal keeps its condition in AdvancedRule (JSON) and leaves
+        # ContentContainsSensitiveInformation empty; a rule built with
+        # New-AutoSensitivityLabelRule fills ContentContainsSensitiveInformation. Both were
+        # seen on live tenants (SMB run 2, 28 Sep 2026; main lab, 29 Sep 2026). Read
+        # whichever is populated, for every rule: the portal writes one rule per location,
+        # and one under-configured location must not hide behind a correct one.
+        $ccCounts = @()
+        $ssnCounts = @()
+        foreach ($r in $rules) {
+            $cfg = $r.ContentContainsSensitiveInformation
+            if ($null -eq $cfg -or @($cfg).Count -eq 0) {
+                $cfg = $null
+                if (-not [string]::IsNullOrWhiteSpace([string]$r.AdvancedRule)) {
+                    try { $cfg = [string]$r.AdvancedRule | ConvertFrom-Json -ErrorAction Stop } catch { $cfg = $null }
+                }
             }
+            $cc = $null
+            $ssn = $null
+            if ($null -ne $cfg) {
+                $cc = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $cfg -SensitiveTypeName 'Credit Card Number'
+                $ssn = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $cfg -SensitiveTypeName 'U.S. Social Security Number (SSN)'
+                if ($null -eq $ssn) {
+                    $ssn = Get-MinCountForSensitiveType -ContentContainsSensitiveInformation $cfg -SensitiveTypeName 'U.S. Social Security Number'
+                }
+            }
+            $ccCounts += , $cc
+            $ssnCounts += , $ssn
         }
 
-        $hasCreditCard = $null -ne $creditCardMinCount
-        $hasSsn = $null -ne $ssnMinCount
-        $thresholdsMatch = ($creditCardMinCount -eq 5) -and ($ssnMinCount -eq 5)
+        $hasCreditCard = $hasRule -and -not ($ccCounts -contains $null)
+        $hasSsn = $hasRule -and -not ($ssnCounts -contains $null)
+        $creditCardMinCount = ($ccCounts | Where-Object { $null -ne $_ } | Measure-Object -Minimum).Minimum
+        $ssnMinCount = ($ssnCounts | Where-Object { $null -ne $_ } | Measure-Object -Minimum).Minimum
+        $thresholdsMatch = $hasCreditCard -and $hasSsn -and
+                           (@($ccCounts | Where-Object { $_ -ne 5 }).Count -eq 0) -and
+                           (@($ssnCounts | Where-Object { $_ -ne 5 }).Count -eq 0)
 
         if ($simulationMode -and $labelMatches -and $sharePointEnabled -and $oneDriveEnabled -and $exchangeEnabled -and $hasCreditCard -and $hasSsn -and $thresholdsMatch) {
             $found = $true
