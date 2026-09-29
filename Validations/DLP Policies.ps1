@@ -281,12 +281,16 @@ do {
             if ("$blockAccessValue".Trim() -match '^(true|1|yes)$') { $blockRestrictsAccess = $true }
         }
 
-        # 'NotInOrganization' is the condition spelling and 'PerAnonymousUser' is
-        # the equivalent spelling on the block action, so either one proves the
-        # rule targets people outside the organisation.
+        # "Block only people outside your organization" is stored as BlockAccessScope PerUser;
+        # All blocks everyone and PerAnonymousUser covers only "Anyone with the link". Purview
+        # refuses PerUser unless the rule's first condition is "shared with people outside my
+        # organization", so PerUser also proves that condition. Read from a live rule on
+        # 29 Sep 2026: BlockAccess True, BlockAccessScope PerUser, AccessScope empty (the
+        # portal keeps the condition in AdvancedRule). The old check accepted only
+        # NotInOrganization or PerAnonymousUser and so failed the correct build.
         $blockTargetsExternal = $false
-        foreach ($scopeValue in (Get-NonEmptyPropertyValues -InputObject $blockRule -PropertyNames @('AccessScope','BlockAccessScope'))) {
-            if ("$scopeValue" -match '(?i)notinorganization|peranonymoususer') { $blockTargetsExternal = $true }
+        foreach ($scopeValue in (Get-NonEmptyPropertyValues -InputObject $blockRule -PropertyNames @('BlockAccessScope'))) {
+            if ("$scopeValue".Trim() -match '^(?i)peruser$') { $blockTargetsExternal = $true }
         }
 
         $blockLabelConditionText = Get-RuleLabelConditionText -Rule $blockRule
@@ -368,7 +372,7 @@ do {
             if (-not $blockHasRequiredLogic) {
                 $missingRuleLogic = @()
                 if (-not $blockRestrictsAccess)   { $missingRuleLogic += 'the restrict-access action (BlockAccess is not true)' }
-                if (-not $blockTargetsExternal)   { $missingRuleLogic += 'an access scope of people outside the organisation (AccessScope is not NotInOrganization)' }
+                if (-not $blockTargetsExternal)   { $missingRuleLogic += 'the action Block only people outside your organization (BlockAccessScope is not PerUser)' }
                 if (-not $blockConditionsOnLabel) { $missingRuleLogic += "a condition on the '$expectedLabelName' sensitivity label" }
                 if (-not $blockNotifiesUser)      { $missingRuleLogic += 'a user notification / policy tip (NotifyUser is empty)' }
                 if (-not $blockReportsIncident)   { $missingRuleLogic += 'an incident report or alert (GenerateIncidentReport and GenerateAlert are both empty)' }
