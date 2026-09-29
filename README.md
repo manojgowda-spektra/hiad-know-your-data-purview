@@ -10,8 +10,9 @@ Nothing is pre-seeded. Attendees build the whole configuration themselves and ge
 evidence they then interpret. Security Copilot in Microsoft Purview is not provisioned in this
 environment and no challenge depends on it.
 
-- Lab guide: `LabGuidePackage/Lab Guide/Lab Guide/`
-- Guide manifest: `LabGuidePackage/Lab Guide/masterdoc.json`
-- Validations: `Validations/`
+- Lab guide: maintained in `CloudLabsAI-Azure/hack-in-a-day-challenges` under
+  `security/purview-know-your-data-learner-built/`. That is the copy the CloudLabs Guide tab
+  serves. Both `masterdoc.json` files here point to it; edit the guide there, not in this repo.
+- Validations: `Validations/`, tested against a live tenant on 29 Sep 2026.
 
 Deployment assets (ARM, parameters, bootstrap) are hosted separately in blob storage.
